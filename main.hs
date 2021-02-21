@@ -150,4 +150,27 @@ data RayResult = NoHit |
 
 type Traceable = Ray -> RayResult
 
-data Camera = Camera {position :: Vec, fov, yaw, pitch :: Float}
+data Camera = Camera {position :: Vec, fov, yaw, pitch :: Double}
+
+--consider the image to be a square (you can still ask for pixel indices outside the square though.)
+--the main image is mapped onto x,y in [0, sidelength) 
+getRayAtPixel :: Camera -> Int -> Int -> Int -> Ray
+getRayAtPixel cam sidelength x y = 
+   let xf  = fromIntegral x in
+   let yf  = fromIntegral y in 
+   let slf = fromIntegral sidelength in 
+   --say that the fov is the angle from the center of the image to the middle of the right of the image.
+   let xf2 = xf - slf / 2 in 
+   let yf2 = yf - slf / 2 in 
+   --the image is a grid (plane) of points perpendicular to the x axis.
+   --we want some distance to initialize the grid from the origin so that:
+   --then the angle from (dist,0,0) to (0,0,0) to (dist,sidelength/2,0) = fov
+   --    see fig1.png (shows the xy plane)
+   --    therefore tan(fov) = (sidelength/2) / dist.
+   --    dist = sidelength / (2*tan(fov))
+   let dist = slf / 2 / tan (fov cam) in 
+   --rotate this point accordint to the yaw and pitch of the camera 
+   let camrot = rotxy (pitch cam) *... rotxz (yaw cam) in 
+   let lk = camrot *.. (dist,xf2,yf2) in 
+      Ray {pos = position cam, look = lk}
+   
